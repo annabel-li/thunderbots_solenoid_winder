@@ -26,33 +26,36 @@ void setup() {
   scale.begin(LOADCELL_DOUT_PIN, LOADCELL_CLK_PIN);
 
   if (doRunTest) {
+    if (CALIBRATION_FACTOR == 0.0) {
+      Serial.println("Set CALIBRATION_FACTOR first.");
+      while (true) delay(1000);
+    }
     scale.set_scale(CALIBRATION_FACTOR); 
     scale.tare();
     Serial.println("time_ms,tension");  // CSV header
   }
 }
 
-void calibrate() {
-
-  if (scale.is_ready()) {
-    scale.set_scale();    
-    Serial.println("Tare... remove any weights from the scale.");
-    delay(5000);
-    scale.tare();
-    Serial.println("Tare done...");
-    Serial.print("Place a known weight on the scale...");
-    delay(5000);
-    long reading = scale.get_units(10);
-    Serial.print("Result: ");
-    Serial.println(reading);
-  } 
-  else {
+bool calibrateOnce() {
+  if (!scale.wait_ready_timeout(2000)) {
     Serial.println("HX711 not found.");
+    delay(1000);
+    return false;                          // try again
   }
-  delay(1000);
-
+  scale.set_scale();                       
+  Serial.println("Remove all weight...");
+  delay(5000);
+  scale.tare();
+  Serial.println("Tare done. Hang the known weight now...");
+  delay(8000);
+  double reading = scale.get_units(10);
+  Serial.print("Reading: ");
+  Serial.println(reading);
+  Serial.print("CALIBRATION_FACTOR = ");
+  Serial.println(reading / KNOWN_WEIGHT, 4);
+  return true;   
+                            
 }
-//next step: calibration factor = (reading)/(known weight)
 
 void runTest() {
 
@@ -66,11 +69,13 @@ void runTest() {
 
 void loop() {
 
+  static bool calibrated == false; 
+
   if (doCalibrate) {
-    calibrate(); 
-  }
-  else if (doRunTest) {
-    runTest(); 
+    if (!calibrated) calibrated = calibrateOnce();
+  } else {
+    runTest();
   }
 
 }
+
