@@ -7,6 +7,7 @@
 const int LOADCELL_DOUT_PIN = 25; //data pin
 const int LOADCELL_CLK_PIN = 26; //clk pin 
 const double CALIBRATION_FACTOR = 0.0; 
+const double KNOWN_WEIGHT = 0.0; 
 
 HX711 scale;
 
@@ -69,11 +70,15 @@ void runTest() {
 
 void loop() {
 
-  static bool calibrated == false; 
+  static bool calibrated = false; 
 
   if (doCalibrate) {
-    if (!calibrated) calibrated = calibrateOnce();
-  } else {
+    if (!calibrated) {
+      calibrated = calibrateOnce();
+    }  
+  }
+
+  else {
     runTest();
   }
 
